@@ -725,6 +725,7 @@ export default function HtmlViewer({
         anchorText: a.anchorText,
         openerSelector: a.openerSelector,
         authorName,
+        resolved: false,
         createdAt: new Date().toISOString(),
         comments: [],
       };
@@ -879,15 +880,25 @@ export default function HtmlViewer({
             className={`pointer-events-auto absolute w-7 h-7 -ml-3.5 -mt-3.5 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-md transition-transform hover:scale-110 cursor-grab active:cursor-grabbing touch-none ${
               activePinId === pin.id
                 ? "bg-orange-500 ring-2 ring-orange-300 scale-110 z-20"
+                : pin.resolved
+                ? "bg-emerald-500 hover:bg-emerald-600 z-10"
                 : "bg-blue-500 hover:bg-blue-600 z-10"
             }`}
             style={{ left: 0, top: 0, display: "none" }}
             onPointerDown={(e) => handlePinPointerDown(e, pin.id)}
             onPointerMove={handlePinPointerMove}
             onPointerUp={(e) => handlePinPointerUp(e, pin.id)}
-            title={`${pin.authorName}의 댓글 (드래그로 이동)`}
+            title={`${pin.authorName}의 댓글${
+              pin.resolved ? " (반영 완료)" : ""
+            } (드래그로 이동)`}
           >
-            {pin.authorName[0]?.toUpperCase() ?? "?"}
+            {pin.resolved && activePinId !== pin.id ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              pin.authorName[0]?.toUpperCase() ?? "?"
+            )}
           </button>
         ))}
       </div>

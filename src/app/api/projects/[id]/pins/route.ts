@@ -70,6 +70,7 @@ export async function POST(
     anchorText: pin!.anchorText,
     openerSelector: pin!.openerSelector,
     authorName: pin!.authorName,
+    resolved: pin!.resolved,
     createdAt: pin!.createdAt.toISOString(),
     comments: [],
   });

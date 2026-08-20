@@ -27,6 +27,7 @@ export async function PATCH(
     set.anchorText = body.anchorText;
   if (typeof body.openerSelector === "string" || body.openerSelector === null)
     set.openerSelector = body.openerSelector;
+  if (typeof body.resolved === "boolean") set.resolved = body.resolved;
 
   if (Object.keys(set).length > 0) {
     await db.update(pins).set(set).where(eq(pins.id, pinId));

@@ -168,6 +168,27 @@ export default function ReviewPage({
     );
   };
 
+  // 피드백 반영 체크: 낙관적으로 반영하고 실패 시 되돌린다
+  const handleResolvedChanged = async (pinId: string, resolved: boolean) => {
+    if (pinId.startsWith("temp-")) return; // 서버 저장 전인 핀
+    const apply = (value: boolean) =>
+      setPins((prev) =>
+        prev.map((p) => (p.id === pinId ? { ...p, resolved: value } : p))
+      );
+
+    apply(resolved);
+    try {
+      const res = await fetch(`/api/pins/${pinId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolved }),
+      });
+      if (!res.ok) apply(!resolved);
+    } catch {
+      apply(!resolved);
+    }
+  };
+
   const handleCommentDeleted = (pinId: string, commentId: string) => {
     setPins((prev) =>
       prev.map((p) =>
@@ -209,6 +230,7 @@ export default function ReviewPage({
         isPlacingPin={isPlacingPin}
         onTogglePlacingPin={() => setIsPlacingPin(!isPlacingPin)}
         pinCount={pins.length}
+        resolvedCount={pins.filter((p) => p.resolved).length}
         isPanelOpen={isPanelOpen}
         onTogglePanel={handleTogglePanel}
         pinsHidden={pinsHidden}
@@ -248,6 +270,7 @@ export default function ReviewPage({
               onCommentEdited={handleCommentEdited}
               onCommentDeleted={handleCommentDeleted}
               onPinDeleted={handlePinDeleted}
+              onResolvedChanged={handleResolvedChanged}
               onClose={handleClosePanel}
             />
           </div>

@@ -35,6 +35,7 @@ for (const stmt of [
   "ALTER TABLE pins ADD COLUMN offset_y REAL",
   "ALTER TABLE pins ADD COLUMN anchor_text TEXT",
   "ALTER TABLE pins ADD COLUMN opener_selector TEXT",
+  "ALTER TABLE pins ADD COLUMN resolved INTEGER NOT NULL DEFAULT 0",
 ]) {
   try {
     await client.execute(stmt);

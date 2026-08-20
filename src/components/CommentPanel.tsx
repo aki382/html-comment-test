@@ -12,10 +12,68 @@ interface CommentPanelProps {
   onCommentEdited: (pinId: string, commentId: string, body: string) => void;
   onCommentDeleted: (pinId: string, commentId: string) => void;
   onPinDeleted: (pinId: string) => void;
+  onResolvedChanged: (pinId: string, resolved: boolean) => void;
   onClose: () => void;
 }
 
 const initial = (name: string) => name?.[0]?.toUpperCase() ?? "?";
+
+/** 체크박스 모양(표시 전용). 클릭 처리는 감싸는 쪽에서 한다. */
+function CheckMark({
+  resolved,
+  disabled,
+}: {
+  resolved: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <span
+      className={`w-5 h-5 flex-shrink-0 rounded-md border flex items-center justify-center transition-colors ${
+        disabled
+          ? "border-gray-200 text-transparent"
+          : resolved
+          ? "bg-emerald-500 border-emerald-500 text-white group-hover/check:bg-emerald-600"
+          : "border-gray-300 text-transparent group-hover/check:border-emerald-400 group-hover/check:text-emerald-300"
+      }`}
+    >
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+      </svg>
+    </span>
+  );
+}
+
+/** 피드백 반영 여부 체크박스. 스레드(핀) 단위로 토글한다. */
+function ResolveCheckbox({
+  resolved,
+  disabled,
+  onToggle,
+}: {
+  resolved: boolean;
+  disabled?: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={resolved}
+      aria-label="피드백 반영 완료"
+      disabled={disabled}
+      onClick={onToggle}
+      title={
+        disabled
+          ? "핀 저장 중..."
+          : resolved
+          ? "반영 완료 — 클릭하면 해제"
+          : "반영 완료로 표시"
+      }
+      className="group/check p-1 disabled:cursor-not-allowed"
+    >
+      <CheckMark resolved={resolved} disabled={disabled} />
+    </button>
+  );
+}
 
 function Message({
   comment,
@@ -124,12 +182,14 @@ export default function CommentPanel({
   onCommentEdited,
   onCommentDeleted,
   onPinDeleted,
+  onResolvedChanged,
   onClose,
 }: CommentPanelProps) {
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const activePin = pins.find((p) => p.id === activePinId) ?? null;
+  const resolvedCount = pins.filter((p) => p.resolved).length;
 
   // 낙관적으로 방금 찍은 핀은 서버 저장 전(temp id)이라 댓글 등록이 실패할 수 있음
   const pinPending = !!activePin && activePin.id.startsWith("temp-");
@@ -200,7 +260,9 @@ export default function CommentPanel({
             <p className="text-xs text-gray-500 mt-0.5 truncate">
               {activePin
                 ? `${activePin.authorName}의 댓글`
-                : `댓글 ${pins.length}개`}
+                : pins.length > 0
+                ? `댓글 ${pins.length}개 · 반영 ${resolvedCount}/${pins.length}`
+                : "댓글 0개"}
             </p>
           </div>
         </div>
@@ -226,23 +288,47 @@ export default function CommentPanel({
               {pins.map((pin) => {
                 const root = pin.comments[0] ?? null;
                 return (
-                  <li key={pin.id}>
+                  <li
+                    key={pin.id}
+                    className={`flex items-center gap-1 pr-2 rounded-lg hover:bg-gray-50 ${
+                      pin.resolved ? "bg-emerald-50/60" : ""
+                    }`}
+                  >
                     <button
                       onClick={() => onSelectPin(pin.id)}
-                      className="w-full flex items-start gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 text-left"
+                      className="flex-1 min-w-0 flex items-start gap-3 px-2 py-2 text-left"
                     >
-                      <span className="w-6 h-6 flex-shrink-0 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
+                      <span
+                        className={`w-6 h-6 flex-shrink-0 rounded-full text-white flex items-center justify-center text-xs font-bold ${
+                          pin.resolved ? "bg-emerald-500" : "bg-blue-500"
+                        }`}
+                      >
                         {initial(pin.authorName)}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-medium text-gray-800 truncate">
+                        <span
+                          className={`block text-sm font-medium truncate ${
+                            pin.resolved ? "text-gray-500" : "text-gray-800"
+                          }`}
+                        >
                           {pin.authorName}
                         </span>
-                        <span className="block text-sm text-gray-600 line-clamp-1">
+                        <span
+                          className={`block text-sm line-clamp-1 ${
+                            pin.resolved
+                              ? "text-gray-400 line-through"
+                              : "text-gray-600"
+                          }`}
+                        >
                           {root ? root.body : "댓글 없음"}
                         </span>
                       </span>
                     </button>
+                    <ResolveCheckbox
+                      resolved={pin.resolved}
+                      disabled={pin.id.startsWith("temp-")}
+                      onToggle={() => onResolvedChanged(pin.id, !pin.resolved)}
+                    />
                   </li>
                 );
               })}
@@ -251,6 +337,24 @@ export default function CommentPanel({
         </div>
       ) : (
         <>
+          {/* 반영 여부 토글: 스레드 전체(핀) 단위 */}
+          <button
+            onClick={() =>
+              !pinPending && onResolvedChanged(activePin.id, !activePin.resolved)
+            }
+            disabled={pinPending}
+            role="checkbox"
+            aria-checked={activePin.resolved}
+            className={`group/check flex items-center gap-2 px-4 py-2.5 border-b text-sm font-medium transition-colors ${
+              activePin.resolved
+                ? "bg-emerald-50 border-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                : "bg-white border-gray-100 text-gray-600 hover:bg-gray-50"
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            <CheckMark resolved={activePin.resolved} disabled={pinPending} />
+            {activePin.resolved ? "반영 완료" : "피드백 반영 완료로 표시"}
+          </button>
+
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {activePin.comments.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-4">

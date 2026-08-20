@@ -20,6 +20,8 @@ export interface Pin {
   // 모달을 여는 트리거 요소(핀 직전 마지막 클릭). 요소가 사라지면 다시 눌러 재오픈
   openerSelector: string | null;
   authorName: string;
+  // 피드백 반영 완료 여부(스레드 단위 체크)
+  resolved: boolean;
   createdAt: string;
   comments: Comment[];
 }

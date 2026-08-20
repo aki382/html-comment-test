@@ -34,6 +34,8 @@ export const pins = sqliteTable("pins", {
   anchorText: text("anchor_text"),
   openerSelector: text("opener_selector"),
   authorName: text("author_name").notNull(),
+  // 피드백 반영 완료 체크(댓글 스레드 단위)
+  resolved: integer("resolved", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),

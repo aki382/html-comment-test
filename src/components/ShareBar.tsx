@@ -10,6 +10,7 @@ interface ShareBarProps {
   isPlacingPin: boolean;
   onTogglePlacingPin: () => void;
   pinCount: number;
+  resolvedCount: number;
   isPanelOpen: boolean;
   onTogglePanel: () => void;
   pinsHidden: boolean;
@@ -24,6 +25,7 @@ export default function ShareBar({
   isPlacingPin,
   onTogglePlacingPin,
   pinCount,
+  resolvedCount,
   isPanelOpen,
   onTogglePanel,
   pinsHidden,
@@ -52,7 +54,23 @@ export default function ShareBar({
           </a>
           <div className="min-w-0">
             <h1 className="font-semibold text-gray-900 truncate">{fileName}</h1>
-            <p className="text-xs text-gray-500">댓글 {pinCount}개</p>
+            <p className="text-xs text-gray-500">
+              댓글 {pinCount}개
+              {pinCount > 0 && (
+                <>
+                  {" · "}
+                  <span
+                    className={
+                      resolvedCount === pinCount
+                        ? "text-emerald-600 font-medium"
+                        : ""
+                    }
+                  >
+                    반영 {resolvedCount}/{pinCount}
+                  </span>
+                </>
+              )}
+            </p>
           </div>
         </div>
 
